@@ -1,0 +1,20 @@
+ba,a main
+///////////mul
+mov 0, %L1
+mov 0, %L2
+//////////for
+cmp %L2, %I2
+bge, a fin
+add %L1, %I1, %G1
+mov %G1, %L1
+add %L2, 1, %G2
+mov %G2, %L2
+ba,a
+//////////fin
+jmpl %O7, 1, %G0
+mov %L1, %O0
+//////////main
+mov 3, %I1
+call mul
+mov 4, %I2
+mov %O0, %O1
