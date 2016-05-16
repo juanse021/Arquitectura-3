@@ -11,6 +11,7 @@ entity PSR is
            clk : in  STD_LOGIC;
            nzvc : in  STD_LOGIC_VECTOR (3 downto 0);
 			  ncwp : in  STD_LOGIC;
+			  icc : out  STD_LOGIC_VECTOR (3 downto 0);
 			  cwp : out  STD_LOGIC;
            psr_out : out  STD_LOGIC);
 end PSR;
@@ -25,15 +26,16 @@ begin
 		if (reset = '1') then
 			psr_out <= '0';
 			cwp <= '0';
+			icc <= "0000";
 		else
 			if(rising_edge(clk)) then
 				psr_out <= nzvc(0);
 				cwp <= ncwp;
+				icc <= nzvc;
 			end if;
 		end if;
 		
 	end process;
-
-
+	
 end Behavioral;
 
