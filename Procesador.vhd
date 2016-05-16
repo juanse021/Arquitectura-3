@@ -51,9 +51,13 @@ architecture Behavioral of Procesador is
 	COMPONENT CU
 	PORT(
 		Op : IN std_logic_vector(1 downto 0);
-		Op3 : IN std_logic_vector(5 downto 0);          
+		Op2 : IN std_logic_vector(2 downto 0);
+		Op3 : IN std_logic_vector(5 downto 0);
+		cond : IN std_logic_vector(3 downto 0);
+		icc : IN std_logic_vector(3 downto 0);          
 		CU_out : OUT std_logic_vector(5 downto 0);
 		RFSOURCE : OUT std_logic_vector(1 downto 0);
+		PCSOURCE : OUT std_logic_vector(1 downto 0);
 		wrEnRF : OUT std_logic;
 		wrEnMe : OUT std_logic;
 		rfDest : OUT std_logic
@@ -100,17 +104,6 @@ architecture Behavioral of Procesador is
 		);
 	END COMPONENT;
 	
-	COMPONENT PSR
-	PORT(
-		reset : IN std_logic;
-		clk : IN std_logic;
-		ncwp: IN std_logic;
-		nzvc : IN std_logic_vector(3 downto 0); 
-		cwp : out std_logic;
-		psr_out : OUT std_logic
-		);
-	END COMPONENT;
-	
 	COMPONENT PSRM
 	PORT(
 		reset : IN std_logic;
@@ -119,6 +112,18 @@ architecture Behavioral of Procesador is
 		Aluresult : IN std_logic_vector(31 downto 0);
 		Aluop : IN std_logic_vector(5 downto 0);          
 		nzvc : OUT std_logic_vector(3 downto 0)
+		);
+	END COMPONENT;
+	
+	COMPONENT PSR
+	PORT(
+		reset : IN std_logic;
+		clk : IN std_logic;
+		nzvc : IN std_logic_vector(3 downto 0);
+		ncwp : IN std_logic;          
+		icc : OUT std_logic_vector(3 downto 0);
+		cwp : OUT std_logic;
+		psr_out : OUT std_logic
 		);
 	END COMPONENT;
 	
@@ -166,15 +171,71 @@ architecture Behavioral of Procesador is
 		MUXDM_out : OUT std_logic_vector(31 downto 0)
 		);
 	END COMPONENT;
+	
+	COMPONENT SEU22
+	PORT(
+		imm22 : IN std_logic_vector(21 downto 0);          
+		SEU22_out : OUT std_logic_vector(31 downto 0)
+		);
+	END COMPONENT;
+	
+	COMPONENT SEU30
+	PORT(
+		imm30 : IN std_logic_vector(29 downto 0);          
+		SEU30_out : OUT std_logic_vector(31 downto 0)
+		);
+	END COMPONENT;
+	
+	COMPONENT MUXPC
+	PORT(
+		entrada1 : IN std_logic_vector(31 downto 0);
+		entrada2 : IN std_logic_vector(31 downto 0);
+		entrada3 : IN std_logic_vector(31 downto 0);
+		entrada4 : IN std_logic_vector(31 downto 0);
+		i : IN std_logic_vector(1 downto 0);          
+		MUXPC_out : OUT std_logic_vector(31 downto 0)
+		);
+	END COMPONENT;
 
-	signal CRD, suma_out, nPC_out, PC_out, IM_out, CRs1, CRs2, ALUResult, SEU_out, MUX_out : std_logic_vector(31 downto 0);
-	signal MUXDM_out, DMout : std_logic_vector(31 downto 0);
+	signal CRD, suma_out, nPC_out, PC_out, IM_out, CRs1, CRs2, ALUResult, MUX_out : std_logic_vector(31 downto 0);
+	signal MUXPC_out, suma30_out, suma22_out, SEU30_out, SEU22_out, SEU_out, MUXDM_out, DMout : std_logic_vector(31 downto 0);
 	signal MUXRF_out, registroO7, CU_out, nrs1, nrs2, nrd : std_logic_vector(5 downto 0);
-	signal nzvc : std_logic_vector(3 downto 0);
-	signal RFSOURCE : std_logic_vector(1 downto 0);
+	signal icc, nzvc : std_logic_vector(3 downto 0);
+	signal PCSOURCE, RFSOURCE : std_logic_vector(1 downto 0);
 	signal rfDest, wrEnMe, wrEnRF, psr_out, ncwp, cwp: std_logic;
 	
 begin
+	
+	Inst_MUXPC: MUXPC PORT MAP(
+		entrada1 => suma30_out,
+		entrada2 => suma22_out,
+		entrada3 => suma_out,
+		entrada4 => ALUResult,
+		MUXPC_out => MUXPC_out,
+		i => PCSOURCE
+	);
+	
+	Inst_suma22: suma PORT MAP(
+		op1 => SEU22_out,
+		op2 => PC_out,
+		suma_out => suma22_out
+	);
+	
+	Inst_suma30: suma PORT MAP(
+		op1 => SEU30_out,
+		op2 => PC_out,
+		suma_out => suma30_out
+	);
+	
+	Inst_SEU30: SEU30 PORT MAP(
+		imm30 => IM_out(29 downto 0),
+		SEU30_out => SEU30_out
+	);
+	
+	Inst_SEU22: SEU22 PORT MAP(
+		imm22 => IM_out(21 downto 0),
+		SEU22_out => SEU22_out
+	);
 	
 	Inst_MUXDM: MUXDM PORT MAP(
 		entrada1 => DMout,
@@ -214,7 +275,7 @@ begin
 	);
 	
 	Inst_nPC: nPC PORT MAP(
-		nPC_in => suma_out,
+		nPC_in => MUXPC_out,
 		reset => reset,
 		clk => clk,
 		nPC_out => nPC_out
@@ -241,9 +302,13 @@ begin
 	
 	Inst_CU: CU PORT MAP(
 		Op => IM_out(31 downto 30),
+		Op2 => IM_out(24 downto 22),
 		Op3 => IM_out(24 downto 19),
+		cond => IM_out(28 downto 25),
+		icc => icc,
 		CU_out => CU_out,
 		RFSOURCE => RFSOURCE,
+		PCSOURCE => PCSOURCE,
 		wrEnRF => wrEnRF,
 		wrEnMe => wrEnMe,
 		rfDest => rfDest
@@ -295,10 +360,11 @@ begin
 		clk => clk,
 		ncwp => ncwp,
 		cwp => cwp,
+		icc => icc,
 		nzvc => nzvc,
 		psr_out => psr_out
 	);
 	
-	salida <= ALUResult;
+	salida <= MUXDM_out;
 
 end Behavioral;
