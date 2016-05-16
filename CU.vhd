@@ -12,6 +12,8 @@ entity CU is
            Op3 : in  STD_LOGIC_VECTOR (5 downto 0);
 			  cond : in  STD_LOGIC_VECTOR (3 downto 0);
            icc : in  STD_LOGIC_VECTOR (3 downto 0);
+			  a : in  STD_LOGIC;
+			  a_out : out  STD_LOGIC;
            CU_out : out  STD_LOGIC_VECTOR (5 downto 0);
 			  RFSOURCE : out STD_LOGIC_VECTOR (1 downto 0);
 			  PCSOURCE : out STD_LOGIC_VECTOR (1 downto 0);
@@ -22,9 +24,9 @@ end CU;
 
 architecture Behavioral of CU is
 
-begin
+begin 
 
-	process (Op, Op2, Op3, cond, icc)	
+	process (Op, Op2, Op3, cond, icc, a)	
 	begin
 		
 		if (Op = "01") then			-- Call
@@ -33,8 +35,9 @@ begin
 			rfDest <= '1'; 
 			RFSOURCE <= "10";
 			PCSOURCE <= "00";
-			CU_out <= "000000"; 		
-			
+			CU_out <= "000000"; 
+			a_out <= '0';
+			 
 		else	
 			rfDest <= '0';
 			if(Op = "00")then
@@ -46,100 +49,192 @@ begin
 					case cond is
 						when "1000" => 				-- Branch Always
 							PCSOURCE <= "01";	
+							if a = '1' then
+								a_out <= '1';
+							else
+								a_out <= '0';
+							end if;
 						when "0000" =>					-- Branch Never
 							PCSOURCE <= "10";
+							a_out <= '0';
 						when "1001" => 				-- Branch on Not Equal
 							if(not(icc(2)) = '1') then
 								PCSOURCE <= "01";	
+								if a = '1' then
+									a_out <= '1';
+								else
+									a_out <= '0';
+								end if;
 							else
 								PCSOURCE <= "10";	
+								a_out <= '0';
 							end if;
 						when "0001" => 				-- Branch on Equal
 							if(icc(2) = '1') then 
 								PCSOURCE <= "01";	
+								if a = '1' then
+									a_out <= '1';
+								else
+									a_out <= '0';
+								end if;
 							else
 								PCSOURCE <= "10";	
+								a_out <= '0';
 							end if;
 						when "1010" => 				-- Branch on Greater
 							if((not(icc(2) or (icc(3) xor icc(1)))) = '1') then 
 								PCSOURCE <= "01";	
+								if a = '1' then
+									a_out <= '1';
+								else
+									a_out <= '0';
+								end if;
 							else
 								PCSOURCE <= "10";	
-							end if;	
-						when "0010" => 				-- Branch on Less or Equal
+								a_out <= '0';
+							end if;						when "0010" => 				-- Branch on Less or Equal
 							if((icc(2) or (icc(3) xor icc(1))) = '1') then 
 								PCSOURCE <= "01";	
+								if a = '1' then
+									a_out <= '1';
+								else
+									a_out <= '0';
+								end if;
 							else
 								PCSOURCE <= "10";	
+								a_out <= '0';
 							end if;
 						when "1011" => 				-- Branch on Greater or Equal
 							if((not(icc(3) xor icc(1))) = '1') then
 								PCSOURCE <= "01";	
+								if a = '1' then
+									a_out <= '1';
+								else
+									a_out <= '0';
+								end if;
 							else
 								PCSOURCE <= "10";	
+								a_out <= '0';
 							end if;
 						when "0011" => 				-- Branch on Less
 							if((icc(3) xor icc(1)) = '1') then 
 								PCSOURCE <= "01";	
+								if a = '1' then
+									a_out <= '1';
+								else
+									a_out <= '0';
+								end if;
 							else
 								PCSOURCE <= "10";	
+								a_out <= '0';
 							end if;
 						when "1100" =>					-- Branch on Greater Unsigned
 							if((not(icc(0) or icc(2))) = '1') then
 								PCSOURCE <= "01";	
+								if a = '1' then
+									a_out <= '1';
+								else
+									a_out <= '0';
+								end if;
 							else
 								PCSOURCE <= "10";	
-							end if;							
+								a_out <= '0';
+							end if;					
 						when "0100" =>					-- Branch on Less or Equal Unsigned
 							if((icc(0) or icc(2)) = '1') then
 								PCSOURCE <= "01";	
+								if a = '1' then
+									a_out <= '1';
+								else
+									a_out <= '0';
+								end if;
 							else
 								PCSOURCE <= "10";	
-							end if;	
+								a_out <= '0';
+							end if;
 						when "1101" => 				-- Branch on Carry Clear (Greater than or Equal, Unsigned)
 							if ((not(icc(0))) = '1') then
 								PCSOURCE <= "01";	
+								if a = '1' then
+									a_out <= '1';
+								else
+									a_out <= '0';
+								end if;
 							else
 								PCSOURCE <= "10";	
-							end if;	
+								a_out <= '0';
+							end if;
 						when "0101" =>					-- Branch on Carry Set (Less than, Unsigned)
 							if ((icc(0)) = '1') then
 								PCSOURCE <= "01";	
+								if a = '1' then
+									a_out <= '1';
+								else
+									a_out <= '0';
+								end if;
 							else
 								PCSOURCE <= "10";	
-							end if;	
+								a_out <= '0';
+							end if;
 						when "1110" =>					-- Branch on Positive
 							if ((not(icc(3))) = '1') then 
 								PCSOURCE <= "01";	
+								if a = '1' then
+									a_out <= '1';
+								else
+									a_out <= '0';
+								end if;
 							else
 								PCSOURCE <= "10";	
-							end if;	
+								a_out <= '0';
+							end if;
 						when "0110" =>					-- Branch on Negative
 							if ((icc(3)) = '1') then
 								PCSOURCE <= "01";	
+								if a = '1' then
+									a_out <= '1';
+								else
+									a_out <= '0';
+								end if;
 							else
 								PCSOURCE <= "10";	
-							end if;	
+								a_out <= '0';
+							end if;
 						when "1111" =>					-- Branch on Overflow Clear
 							if ((not(icc(1))) = '1') then
 								PCSOURCE <= "01";	
+								if a = '1' then
+									a_out <= '1';
+								else
+									a_out <= '0';
+								end if;
 							else
 								PCSOURCE <= "10";	
-							end if;	
+								a_out <= '0';
+							end if;
 						when "0111" =>					-- Branch on Overflow Set
 							if ((icc(1)) = '1') then
 								PCSOURCE <= "01";	
+								if a = '1' then
+									a_out <= '1';
+								else
+									a_out <= '0';
+								end if;
 							else
 								PCSOURCE <= "10";	
-							end if;	
+								a_out <= '0';
+							end if;
 						when others => 
 							PCSOURCE <= "10";	
+							a_out <= '0';
 					end case;
 				elsif(Op2 = "100")then	-- Nop
 					PCSOURCE <= "10";
+					a_out <= '0';
 				end if;
 				
-			else				
+			else	
+				a_out <= '0';
 				if (Op = "10") then	
 					wrEnMe <= '0';
 					case (Op3) is
