@@ -54,7 +54,9 @@ architecture Behavioral of Procesador is
 		Op2 : IN std_logic_vector(2 downto 0);
 		Op3 : IN std_logic_vector(5 downto 0);
 		cond : IN std_logic_vector(3 downto 0);
-		icc : IN std_logic_vector(3 downto 0);          
+		icc : IN std_logic_vector(3 downto 0);
+		a : in  STD_LOGIC;
+		a_out : OUT std_logic;
 		CU_out : OUT std_logic_vector(5 downto 0);
 		RFSOURCE : OUT std_logic_vector(1 downto 0);
 		PCSOURCE : OUT std_logic_vector(1 downto 0);
@@ -196,15 +198,46 @@ architecture Behavioral of Procesador is
 		MUXPC_out : OUT std_logic_vector(31 downto 0)
 		);
 	END COMPONENT;
+	
+	COMPONENT MUXP
+	PORT(
+		entrada1 : IN std_logic_vector(31 downto 0);
+		entrada2 : IN std_logic_vector(31 downto 0);
+		i : IN std_logic;          
+		MUXRF_out : OUT std_logic_vector(31 downto 0)
+		);
+	END COMPONENT;
 
-	signal CRD, suma_out, nPC_out, PC_out, IM_out, CRs1, CRs2, ALUResult, MUX_out : std_logic_vector(31 downto 0);
+	signal suma1, MUX1, MUX2, CRD, suma_out, nPC_out, PC_out, IM_out, CRs1, CRs2, ALUResult, MUX_out : std_logic_vector(31 downto 0);
 	signal MUXPC_out, suma30_out, suma22_out, SEU30_out, SEU22_out, SEU_out, MUXDM_out, DMout : std_logic_vector(31 downto 0);
 	signal MUXRF_out, registroO7, CU_out, nrs1, nrs2, nrd : std_logic_vector(5 downto 0);
 	signal icc, nzvc : std_logic_vector(3 downto 0);
 	signal PCSOURCE, RFSOURCE : std_logic_vector(1 downto 0);
-	signal rfDest, wrEnMe, wrEnRF, psr_out, ncwp, cwp: std_logic;
+	signal a_out, rfDest, wrEnMe, wrEnRF, psr_out, ncwp, cwp: std_logic;
 	
 begin
+
+	Inst_MUXp: MUXP PORT MAP(
+		entrada1 => nPC_out,
+		entrada2 => MUXPC_out,
+		MUXRF_out => MUX1,
+		i => a_out
+	);
+	
+	Inst_MUXnp: MUXP PORT MAP(
+		entrada1 => MUXPC_out,
+		entrada2 => suma1,
+		MUXRF_out => MUX2,
+		i => a_out
+	);
+	
+	Inst_sumaNPC: suma PORT MAP(
+		op1 => x"00000001",
+		op2 => MUXPC_out,
+		suma_out => suma1
+	);
+	
+	
 	
 	Inst_MUXPC: MUXPC PORT MAP(
 		entrada1 => suma30_out,
@@ -275,14 +308,14 @@ begin
 	);
 	
 	Inst_nPC: nPC PORT MAP(
-		nPC_in => MUXPC_out,
+		nPC_in => MUX2,
 		reset => reset,
 		clk => clk,
 		nPC_out => nPC_out
 	);
 	
 	Inst_PC: PC PORT MAP(
-		PC_in => nPC_out,
+		PC_in => MUX1,
 		reset => reset,
 		clk => clk,
 		PC_out => PC_out 
@@ -306,6 +339,8 @@ begin
 		Op3 => IM_out(24 downto 19),
 		cond => IM_out(28 downto 25),
 		icc => icc,
+		a => IM_out(29),
+		a_out => a_out,
 		CU_out => CU_out,
 		RFSOURCE => RFSOURCE,
 		PCSOURCE => PCSOURCE,
